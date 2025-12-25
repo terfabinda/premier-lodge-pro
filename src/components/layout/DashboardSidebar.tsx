@@ -19,17 +19,17 @@ import {
   UserCog,
   Shield,
   ChevronDown,
-  FileText,
-  DollarSign,
   ShoppingBag,
-  Calendar,
   PieChart,
   Building2,
+  DollarSign,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSidebarContext } from "@/contexts/SidebarContext";
 
 interface SidebarProps {
   userRole?: string;
@@ -90,7 +90,7 @@ export function DashboardSidebar({ userRole = "sub-admin" }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, toggleCollapsed, isMobileOpen, setMobileOpen } = useSidebarContext();
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
   const actualRole = user?.role || userRole;
@@ -121,154 +121,310 @@ export function DashboardSidebar({ userRole = "sub-admin" }: SidebarProps) {
     return false;
   };
 
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    setMobileOpen(false);
+  };
+
   return (
-    <motion.aside
-      initial={{ x: -20, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300",
-        collapsed ? "w-20" : "w-64"
-      )}
-    >
-      <div className="flex flex-col h-full">
-        {/* Logo */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
-          <Link to="/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 gold-gradient rounded-lg flex items-center justify-center">
-              <Hotel className="w-6 h-6 text-primary-foreground" />
-            </div>
-            {!collapsed && (
-              <span className="font-heading text-xl font-bold text-sidebar-foreground">
-                LuxeStay
-              </span>
-            )}
-          </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCollapsed(!collapsed)}
-            className="text-sidebar-foreground hover:bg-sidebar-accent"
-          >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </Button>
-        </div>
+    <>
+      {/* Desktop Sidebar */}
+      <motion.aside
+        initial={{ x: -20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        className={cn(
+          "fixed left-0 top-0 z-40 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 hidden lg:flex flex-col",
+          collapsed ? "w-20" : "w-64"
+        )}
+      >
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
+            <Link to="/dashboard" className="flex items-center gap-3">
+              <div className="w-10 h-10 gold-gradient rounded-lg flex items-center justify-center flex-shrink-0">
+                <Hotel className="w-6 h-6 text-primary-foreground" />
+              </div>
+              {!collapsed && (
+                <span className="font-heading text-xl font-bold text-sidebar-foreground">
+                  LuxeStay
+                </span>
+              )}
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleCollapsed}
+              className="text-sidebar-foreground hover:bg-sidebar-accent"
+            >
+              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </Button>
+          </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 scrollbar-hide">
-          <ul className="space-y-1">
-            {filteredMenuItems.map((item) => {
-              const isActive = isActiveRoute(item.path, item.children);
-              const hasChildren = item.children && item.children.length > 0;
-              const isExpanded = isMenuExpanded(item.label);
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto py-4 px-3 scrollbar-hide">
+            <ul className="space-y-1">
+              {filteredMenuItems.map((item) => {
+                const isActive = isActiveRoute(item.path, item.children);
+                const hasChildren = item.children && item.children.length > 0;
+                const isExpanded = isMenuExpanded(item.label);
 
-              if (hasChildren && !collapsed) {
+                if (hasChildren && !collapsed) {
+                  return (
+                    <li key={item.path}>
+                      <button
+                        onClick={() => toggleExpanded(item.label)}
+                        className={cn(
+                          "flex items-center justify-between w-full gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                          isActive
+                            ? "bg-sidebar-primary/20 text-sidebar-primary-foreground"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <item.icon className="w-5 h-5 flex-shrink-0" />
+                          <span className="font-medium">{item.label}</span>
+                        </div>
+                        <ChevronDown className={cn(
+                          "w-4 h-4 transition-transform",
+                          isExpanded && "rotate-180"
+                        )} />
+                      </button>
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.ul
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="ml-4 mt-1 space-y-1 overflow-hidden"
+                          >
+                            {item.children?.map((child) => {
+                              const isChildActive = location.pathname === child.path;
+                              return (
+                                <li key={child.path}>
+                                  <Link
+                                    to={child.path}
+                                    className={cn(
+                                      "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm",
+                                      isChildActive
+                                        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-gold"
+                                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                                    )}
+                                  >
+                                    <child.icon className="w-4 h-4 flex-shrink-0" />
+                                    <span>{child.label}</span>
+                                  </Link>
+                                </li>
+                              );
+                            })}
+                          </motion.ul>
+                        )}
+                      </AnimatePresence>
+                    </li>
+                  );
+                }
+
                 return (
                   <li key={item.path}>
-                    <button
-                      onClick={() => toggleExpanded(item.label)}
+                    <Link
+                      to={item.path}
                       className={cn(
-                        "flex items-center justify-between w-full gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
                         isActive
-                          ? "bg-sidebar-primary/20 text-sidebar-primary-foreground"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-gold"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                        collapsed && "justify-center"
                       )}
+                      title={collapsed ? item.label : undefined}
                     >
-                      <div className="flex items-center gap-3">
-                        <item.icon className="w-5 h-5 flex-shrink-0" />
-                        <span className="font-medium">{item.label}</span>
-                      </div>
-                      <ChevronDown className={cn(
-                        "w-4 h-4 transition-transform",
-                        isExpanded && "rotate-180"
-                      )} />
-                    </button>
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.ul
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="ml-4 mt-1 space-y-1 overflow-hidden"
-                        >
-                          {item.children?.map((child) => {
-                            const isChildActive = location.pathname === child.path;
-                            return (
-                              <li key={child.path}>
-                                <Link
-                                  to={child.path}
-                                  className={cn(
-                                    "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm",
-                                    isChildActive
-                                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-gold"
-                                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                                  )}
-                                >
-                                  <child.icon className="w-4 h-4 flex-shrink-0" />
-                                  <span>{child.label}</span>
-                                </Link>
-                              </li>
-                            );
-                          })}
-                        </motion.ul>
-                      )}
-                    </AnimatePresence>
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && <span className="font-medium">{item.label}</span>}
+                    </Link>
                   </li>
                 );
-              }
+              })}
+            </ul>
+          </nav>
 
-              return (
-                <li key={item.path}>
-                  <Link
-                    to={item.path}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-                      isActive
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-gold"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    )}
-                  >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    {!collapsed && <span className="font-medium">{item.label}</span>}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        {/* User Section */}
-        <div className="p-4 border-t border-sidebar-border">
-          <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
-            <div className="w-10 h-10 rounded-full bg-sidebar-accent flex items-center justify-center">
-              <span className="text-sm font-semibold text-sidebar-foreground">
-                {user?.name?.charAt(0) || "A"}
-              </span>
-            </div>
-            {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
-                  {user?.name || "Admin User"}
-                </p>
-                <p className="text-xs text-muted-foreground truncate capitalize">
-                  {user?.role || "Sub-Admin"}
-                </p>
+          {/* User Section */}
+          <div className="p-4 border-t border-sidebar-border">
+            <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
+              <div className="w-10 h-10 rounded-full bg-sidebar-accent flex items-center justify-center flex-shrink-0">
+                <span className="text-sm font-semibold text-sidebar-foreground">
+                  {user?.name?.charAt(0) || "A"}
+                </span>
               </div>
-            )}
+              {!collapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-sidebar-foreground truncate">
+                    {user?.name || "Admin User"}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate capitalize">
+                    {user?.role || "Sub-Admin"}
+                  </p>
+                </div>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              className={cn(
+                "w-full mt-3 text-sidebar-foreground hover:bg-sidebar-accent",
+                collapsed && "px-0"
+              )}
+            >
+              <LogOut className="w-4 h-4" />
+              {!collapsed && <span className="ml-2">Sign Out</span>}
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            onClick={handleLogout}
-            className={cn(
-              "w-full mt-3 text-sidebar-foreground hover:bg-sidebar-accent",
-              collapsed && "px-0"
-            )}
-          >
-            <LogOut className="w-4 h-4" />
-            {!collapsed && <span className="ml-2">Sign Out</span>}
-          </Button>
         </div>
-      </div>
-    </motion.aside>
+      </motion.aside>
+
+      {/* Mobile Sidebar */}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <motion.aside
+            initial={{ x: -280 }}
+            animate={{ x: 0 }}
+            exit={{ x: -280 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed left-0 top-0 z-50 h-screen w-[280px] bg-sidebar border-r border-sidebar-border lg:hidden flex flex-col"
+          >
+            <div className="flex flex-col h-full">
+              {/* Logo */}
+              <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
+                <Link to="/dashboard" className="flex items-center gap-3" onClick={() => setMobileOpen(false)}>
+                  <div className="w-10 h-10 gold-gradient rounded-lg flex items-center justify-center">
+                    <Hotel className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <span className="font-heading text-xl font-bold text-sidebar-foreground">
+                    LuxeStay
+                  </span>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-sidebar-foreground hover:bg-sidebar-accent"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+
+              {/* Navigation */}
+              <nav className="flex-1 overflow-y-auto py-4 px-3">
+                <ul className="space-y-1">
+                  {filteredMenuItems.map((item) => {
+                    const isActive = isActiveRoute(item.path, item.children);
+                    const hasChildren = item.children && item.children.length > 0;
+                    const isExpanded = isMenuExpanded(item.label);
+
+                    if (hasChildren) {
+                      return (
+                        <li key={item.path}>
+                          <button
+                            onClick={() => toggleExpanded(item.label)}
+                            className={cn(
+                              "flex items-center justify-between w-full gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                              isActive
+                                ? "bg-sidebar-primary/20 text-sidebar-primary-foreground"
+                                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            )}
+                          >
+                            <div className="flex items-center gap-3">
+                              <item.icon className="w-5 h-5 flex-shrink-0" />
+                              <span className="font-medium">{item.label}</span>
+                            </div>
+                            <ChevronDown className={cn(
+                              "w-4 h-4 transition-transform",
+                              isExpanded && "rotate-180"
+                            )} />
+                          </button>
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.ul
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="ml-4 mt-1 space-y-1 overflow-hidden"
+                              >
+                                {item.children?.map((child) => {
+                                  const isChildActive = location.pathname === child.path;
+                                  return (
+                                    <li key={child.path}>
+                                      <button
+                                        onClick={() => handleNavigation(child.path)}
+                                        className={cn(
+                                          "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm w-full text-left",
+                                          isChildActive
+                                            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-gold"
+                                            : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                                        )}
+                                      >
+                                        <child.icon className="w-4 h-4 flex-shrink-0" />
+                                        <span>{child.label}</span>
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </motion.ul>
+                            )}
+                          </AnimatePresence>
+                        </li>
+                      );
+                    }
+
+                    return (
+                      <li key={item.path}>
+                        <button
+                          onClick={() => handleNavigation(item.path)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 w-full text-left",
+                            isActive
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-gold"
+                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          )}
+                        >
+                          <item.icon className="w-5 h-5 flex-shrink-0" />
+                          <span className="font-medium">{item.label}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </nav>
+
+              {/* User Section */}
+              <div className="p-4 border-t border-sidebar-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-sidebar-accent flex items-center justify-center">
+                    <span className="text-sm font-semibold text-sidebar-foreground">
+                      {user?.name?.charAt(0) || "A"}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-sidebar-foreground truncate">
+                      {user?.name || "Admin User"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate capitalize">
+                      {user?.role || "Sub-Admin"}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  onClick={handleLogout}
+                  className="w-full mt-3 text-sidebar-foreground hover:bg-sidebar-accent"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </div>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
