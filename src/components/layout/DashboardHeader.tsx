@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSidebarContext } from "@/contexts/SidebarContext";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -20,6 +21,7 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { setMobileOpen } = useSidebarContext();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -28,44 +30,58 @@ export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-background/80 backdrop-blur-xl border-b border-border">
-      <div className="flex items-center justify-between h-full px-6">
-        <div>
-          <h1 className="text-xl font-heading font-semibold text-foreground">{title}</h1>
-          {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+    <header className="sticky top-0 z-30 h-14 sm:h-16 bg-background/80 backdrop-blur-xl border-b border-border">
+      <div className="flex items-center justify-between h-full px-3 sm:px-6">
+        {/* Left: Mobile menu + Title */}
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+          {/* Mobile Menu Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden flex-shrink-0"
+            onClick={() => setMobileOpen(true)}
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
+          
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-xl font-heading font-semibold text-foreground truncate">{title}</h1>
+            {subtitle && <p className="text-xs sm:text-sm text-muted-foreground truncate hidden sm:block">{subtitle}</p>}
+          </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          {/* Search */}
-          <div className="relative hidden md:block">
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-shrink-0">
+          {/* Search - Hidden on mobile */}
+          <div className="relative hidden lg:block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search..."
-              className="w-64 pl-10 bg-secondary border-border"
+              className="w-48 xl:w-64 pl-10 bg-secondary border-border"
             />
           </div>
 
           {/* Theme Toggle */}
-          <Button variant="ghost" size="icon" onClick={toggleTheme}>
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-8 w-8 sm:h-9 sm:w-9">
             {theme === "dark" ? (
-              <Sun className="w-5 h-5" />
+              <Sun className="w-4 h-4 sm:w-5 sm:h-5" />
             ) : (
-              <Moon className="w-5 h-5" />
+              <Moon className="w-4 h-4 sm:w-5 sm:h-5" />
             )}
           </Button>
 
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="w-5 h-5" />
+          <Button variant="ghost" size="icon" className="relative h-8 w-8 sm:h-9 sm:w-9">
+            <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
           </Button>
 
           {/* User Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 px-2">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-sm font-semibold text-primary">
+              <Button variant="ghost" className="flex items-center gap-1 sm:gap-2 px-1 sm:px-2 h-8 sm:h-9">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xs sm:text-sm font-semibold text-primary">
                     {user?.name?.charAt(0) || "A"}
                   </span>
                 </div>
@@ -82,17 +98,17 @@ export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <div className="flex items-center gap-3 p-3 border-b border-border">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <span className="text-lg font-semibold text-primary">
                     {user?.name?.charAt(0) || "A"}
                   </span>
                 </div>
-                <div>
-                  <p className="font-medium text-foreground">{user?.name || "Admin User"}</p>
-                  <p className="text-xs text-muted-foreground">{user?.email || "admin@luxestay.com"}</p>
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground truncate">{user?.name || "Admin User"}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email || "admin@luxestay.com"}</p>
                 </div>
               </div>
-              <DropdownMenuItem onClick={() => navigate("/dashboard/settings")} className="cursor-pointer">
+              <DropdownMenuItem onClick={() => navigate("/dashboard/profile")} className="cursor-pointer">
                 <User className="w-4 h-4 mr-2" />
                 Profile
               </DropdownMenuItem>
@@ -100,7 +116,7 @@ export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem onClick={() => navigate("/dashboard/change-password")} className="cursor-pointer">
                 <Lock className="w-4 h-4 mr-2" />
                 Change Password
               </DropdownMenuItem>
@@ -111,11 +127,6 @@ export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* Mobile Menu */}
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu className="w-5 h-5" />
-          </Button>
         </div>
       </div>
     </header>
