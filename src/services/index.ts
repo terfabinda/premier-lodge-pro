@@ -14,7 +14,20 @@ export * from './roomService';
 export * from './bookingService';
 
 // Guest Service
-export * from './guestService';
+// Note: getGuestBookings is exported from both bookingService and guestService
+// We explicitly re-export from guestService to resolve the ambiguity
+export { 
+  getGuests, 
+  getGuestById, 
+  createGuest, 
+  updateGuest, 
+  deleteGuest, 
+  getGuestStats,
+  getGuestServices,
+  getGuestBookings as getGuestBookingHistory,
+  getGuestRestaurantOrders,
+  getGuestLaundryOrders 
+} from './guestService';
 
 // Dashboard Service
 export * from './dashboardService';

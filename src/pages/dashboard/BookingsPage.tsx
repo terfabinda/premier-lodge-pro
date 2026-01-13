@@ -19,6 +19,8 @@ import {
   XCircle,
   FileText,
   LogOut,
+  Clock,
+  ChevronDown,
 } from "lucide-react";
 import { FormModal, FormField, ConfirmDialog, ViewModal, DetailRow } from "@/components/forms";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,6 +38,8 @@ import {
   checkIn,
   checkOut,
   cancelBooking,
+  extendBooking,
+  BookingFilterPeriod,
 } from "@/services/bookingService";
 import { getRooms } from "@/services/roomService";
 import { getGuests } from "@/services/guestService";
@@ -46,6 +50,11 @@ const statusColors: Record<string, "success" | "info" | "warning" | "secondary">
   confirmed: "info",
   "checked-out": "secondary",
   cancelled: "warning",
+};
+
+const typeColors: Record<string, "success" | "info"> = {
+  "check-in": "success",
+  "reservation": "info",
 };
 
 export default function BookingsPage() {
@@ -64,6 +73,7 @@ export default function BookingsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [periodFilter, setPeriodFilter] = useState<BookingFilterPeriod>('all');
 
   // Modal States
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
@@ -71,6 +81,8 @@ export default function BookingsPage() {
   const [viewBooking, setViewBooking] = useState<Booking | null>(null);
   const [checkoutBooking, setCheckoutBooking] = useState<Booking | null>(null);
   const [cancelDialog, setCancelDialog] = useState<{ open: boolean; id: string }>({ open: false, id: "" });
+  const [extendModalOpen, setExtendModalOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   const [bookingForm, setBookingForm] = useState({
     guestId: "",
@@ -80,21 +92,31 @@ export default function BookingsPage() {
     paidAmount: "",
   });
 
+  const [extendForm, setExtendForm] = useState({
+    newCheckOut: null as Date | null,
+    additionalPayment: "",
+  });
+
   // Fetch data on mount
   useEffect(() => {
-    fetchBookings({ page, pageSize });
+    fetchBookings({ page, pageSize, period: periodFilter !== 'all' ? periodFilter : undefined });
     fetchStats();
     fetchRooms();
     fetchGuests();
   }, []);
 
-  // Debounced search: when the user types, wait 300ms before fetching
+  // Debounced search and period filter
   useEffect(() => {
     const handler = setTimeout(() => {
-      fetchBookings({ search: searchQuery || undefined, page, pageSize });
+      fetchBookings({ 
+        search: searchQuery || undefined, 
+        page, 
+        pageSize,
+        period: periodFilter !== 'all' ? periodFilter : undefined
+      });
     }, 300);
     return () => clearTimeout(handler);
-  }, [searchQuery, page, pageSize]);
+  }, [searchQuery, page, pageSize, periodFilter]);
 
   // Keep check-in/check-out consistent and not in the past
   useEffect(() => {
@@ -124,9 +146,10 @@ export default function BookingsPage() {
     });
   }, [bookingForm.checkIn, bookingForm.checkOut]);
 
-  const fetchBookings = async (params?: PaginationParams) => {
+  const fetchBookings = async (params?: PaginationParams & { period?: BookingFilterPeriod }) => {
     /**
-     * GET /api/bookings
+     * GET /api/v3/bookings/getbookings
+     * Query params: { page, pageSize, search, period: 'today' | 'this_week' | 'this_month' }
      * Returns: { success: boolean, data: { items: Booking[], totalItems: number, ... }, message: string }
      */
     const response = await bookingsApi.execute(() => getBookings(params));
@@ -134,7 +157,7 @@ export default function BookingsPage() {
     if (response.success && response.data) {
       setBookings(response.data.items);
     }
-  }; 
+  };
 
   const fetchStats = async () => {
     /**
@@ -346,9 +369,27 @@ export default function BookingsPage() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg">All Bookings</CardTitle>
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm">Today</Button>
-                  <Button variant="ghost" size="sm">This Week</Button>
-                  <Button variant="ghost" size="sm">This Month</Button>
+                  <Button 
+                    variant={periodFilter === 'today' ? 'default' : 'ghost'} 
+                    size="sm"
+                    onClick={() => setPeriodFilter(periodFilter === 'today' ? 'all' : 'today')}
+                  >
+                    Today
+                  </Button>
+                  <Button 
+                    variant={periodFilter === 'this_week' ? 'default' : 'ghost'} 
+                    size="sm"
+                    onClick={() => setPeriodFilter(periodFilter === 'this_week' ? 'all' : 'this_week')}
+                  >
+                    This Week
+                  </Button>
+                  <Button 
+                    variant={periodFilter === 'this_month' ? 'default' : 'ghost'} 
+                    size="sm"
+                    onClick={() => setPeriodFilter(periodFilter === 'this_month' ? 'all' : 'this_month')}
+                  >
+                    This Month
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>

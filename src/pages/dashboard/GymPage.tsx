@@ -141,6 +141,7 @@ export default function GymPage() {
       membershipType: memberForm.membershipType,
       startDate: memberForm.startDate,
       endDate: memberForm.endDate,
+      isGuest: memberForm.isGuest,
     };
 
     const response = await mutationApi.execute(() => createGymMember(memberData));
