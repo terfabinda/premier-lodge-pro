@@ -13,6 +13,7 @@ import { DashboardLayout } from "./components/layout/DashboardLayout";
 import DashboardHome from "./pages/dashboard/DashboardHome";
 import RoomsPage from "./pages/dashboard/RoomsPage";
 import GuestsPage from "./pages/dashboard/GuestsPage";
+import GuestDetailsPage from "./pages/dashboard/GuestDetailsPage";
 import BookingsPage from "./pages/dashboard/BookingsPage";
 import RestaurantPage from "./pages/dashboard/RestaurantPage";
 import RestaurantOrderPage from "./pages/dashboard/RestaurantOrderPage";
@@ -49,6 +50,7 @@ const App = () => (
                 <Route index element={<DashboardHome />} />
                 <Route path="rooms" element={<RoomsPage />} />
                 <Route path="guests" element={<GuestsPage />} />
+                <Route path="guests/:id" element={<GuestDetailsPage />} />
                 <Route path="bookings" element={<BookingsPage />} />
                 <Route path="checkout/:bookingId" element={<CheckoutReportPage />} />
                 <Route path="restaurant" element={<RestaurantPage />} />
